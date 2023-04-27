@@ -107,8 +107,11 @@ export const apiFilterMuridByTanggal = async (req, res) => {
 
 export const apiFilterMuridByRangeTanggal = async (req, res) => {
   try {
-    const start = new Date(req.query.awal)
-    const end = new Date(req.query.akhir)
+    const start = new Date(req.query.awal);
+    const end = new Date(req.query.akhir);
+    if (end < start) {
+      return res.status(400).send(err);
+    }
     const match_stage = {
       $match: {
         tanggal: {
@@ -116,25 +119,11 @@ export const apiFilterMuridByRangeTanggal = async (req, res) => {
           $lte: end
         }
       }
-    }
-    const group_stage = {
-      $group: {
-        _id: {
-          day: { $dayOfMonth: "$tanggal" },
-          month: { $month: "$tanggal" },
-          year: { $year: "$tanggal" }
-        },
-        murid: { $push: "$$ROOT" }
-      }
-    }
-    const pipeline = [match_stage, group_stage]
-    const murid = await Murid.aggregate(pipeline)
-    if (murid.length === 0) {
-      return res.status(404).json({ murid: 'Data not found' });
-    }
-    res.status(200).json(murid);
+    };
+    const pipeline = [match_stage];
+    const murid = await Murid.aggregate(pipeline);
+    res.status(200).json(murid || []);
   } catch (err) {
     res.status(400).send(err);
-    console.log(err);
   }
 }
